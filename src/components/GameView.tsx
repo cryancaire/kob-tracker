@@ -1,0 +1,404 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  getGameWithPlayersById,
+  getAllPlayers,
+  updatePlayerInGame,
+  updatePlayerPointsInGame,
+  endGame,
+  deleteEmptyGames,
+  deleteGameIfEmpty,
+} from "../lib/database";
+import type { GameWithPlayers, Player } from "../types/database";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+
+export function GameView() {
+  const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
+  const [game, setGame] = useState<GameWithPlayers | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (gameId) {
+      loadGameData();
+    }
+  }, [gameId]);
+
+
+  const loadGameData = async () => {
+    if (!gameId) return;
+    
+    try {
+      setLoading(true);
+      const [gameData, playersData] = await Promise.all([
+        getGameWithPlayersById(gameId),
+        getAllPlayers(),
+      ]);
+      
+      if (!gameData) {
+        setError("Game not found");
+        return;
+      }
+      
+      setGame(gameData);
+      setPlayers(playersData);
+      setError(null);
+    } catch (err) {
+      setError("Failed to load game data");
+      console.error("Error loading game data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePlayerChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', playerId: string | null) => {
+    if (!gameId) return;
+
+    try {
+      await updatePlayerInGame(gameId, playerSlot, playerId);
+      loadGameData();
+    } catch (err) {
+      setError("Failed to update player");
+      console.error("Error updating player:", err);
+    }
+  };
+
+  const handlePointsChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', pointsToAdd: number) => {
+    if (!gameId || !game) return;
+
+    const currentPoints = game[`${playerSlot}_points`];
+    const newPoints = Math.max(0, currentPoints + pointsToAdd);
+
+    try {
+      await updatePlayerPointsInGame(gameId, playerSlot, newPoints);
+      loadGameData();
+    } catch (err) {
+      setError("Failed to update points");
+      console.error("Error updating points:", err);
+    }
+  };
+
+  const handleSetPoints = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', points: number) => {
+    if (!gameId) return;
+
+    try {
+      await updatePlayerPointsInGame(gameId, playerSlot, points);
+      loadGameData();
+    } catch (err) {
+      setError("Failed to set points");
+      console.error("Error setting points:", err);
+    }
+  };
+
+  const handleTeamPointsChange = async (team: 'team1' | 'team2', pointsToAdd: number) => {
+    if (!gameId || !game) return;
+
+    try {
+      const player1Slot = `${team}_player1` as 'team1_player1' | 'team2_player1';
+      const player2Slot = `${team}_player2` as 'team1_player2' | 'team2_player2';
+      
+      const currentPoints1 = game[`${player1Slot}_points`];
+      const currentPoints2 = game[`${player2Slot}_points`];
+      
+      const newPoints1 = Math.max(0, currentPoints1 + pointsToAdd);
+      const newPoints2 = Math.max(0, currentPoints2 + pointsToAdd);
+
+      await Promise.all([
+        updatePlayerPointsInGame(gameId, player1Slot, newPoints1),
+        updatePlayerPointsInGame(gameId, player2Slot, newPoints2),
+      ]);
+      
+      loadGameData();
+    } catch (err) {
+      setError("Failed to update team points");
+      console.error("Error updating team points:", err);
+    }
+  };
+
+  const handleSetTeamPoints = async (team: 'team1' | 'team2', points: number) => {
+    if (!gameId) return;
+
+    try {
+      const player1Slot = `${team}_player1` as 'team1_player1' | 'team2_player1';
+      const player2Slot = `${team}_player2` as 'team1_player2' | 'team2_player2';
+
+      await Promise.all([
+        updatePlayerPointsInGame(gameId, player1Slot, points),
+        updatePlayerPointsInGame(gameId, player2Slot, points),
+      ]);
+      
+      loadGameData();
+    } catch (err) {
+      setError("Failed to set team points");
+      console.error("Error setting team points:", err);
+    }
+  };
+
+  const handleEndGame = async () => {
+    if (!gameId) return;
+
+    try {
+      await endGame(gameId);
+      navigate("/");
+    } catch (err) {
+      setError("Failed to end game");
+      console.error("Error ending game:", err);
+    }
+  };
+
+  const handleSaveAndReturn = () => {
+    // For ended games, just navigate back
+    navigate("/");
+  };
+
+  const getAvailablePlayers = (currentPlayerSlot: string) => {
+    const assignedPlayerIds = [
+      game?.team1_player1?.id,
+      game?.team1_player2?.id,
+      game?.team2_player1?.id,
+      game?.team2_player2?.id,
+    ].filter((id) => id !== null);
+
+    const currentPlayerId = game?.[`${currentPlayerSlot}` as keyof GameWithPlayers] as Player | null;
+    
+    return players.filter((player) => 
+      !assignedPlayerIds.includes(player.id) || player.id === currentPlayerId?.id
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="loading">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p className="loading-text">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!game) {
+    return (
+      <div className="app-container">
+        <div className="error-banner">
+          Game not found
+          <Button onClick={() => navigate("/")} className="btn btn-sm">
+            Back to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      <div className="app-container">
+        <div className="game-header">
+          <h1 className="app-title">
+            {game.status === 'active' ? 'Active Game' : 'Edit Game'}
+          </h1>
+          <div className="game-actions">
+            <Button onClick={() => navigate("/")} className="btn btn-outline">
+              Back to Home
+            </Button>
+            {game.status === 'active' ? (
+              <Button onClick={handleEndGame} className="btn btn-destructive">
+                End Game
+              </Button>
+            ) : (
+              <Button onClick={handleSaveAndReturn} className="btn btn-green">
+                Save Changes
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {error && (
+          <div className="error-banner">
+            {error}
+            <button onClick={() => setError(null)} className="error-close">
+              ✕
+            </button>
+          </div>
+        )}
+
+        {game.status === 'ended' && (
+          <div className="info-banner">
+            <span>📝 Editing ended game - changes will update player leaderboard scores</span>
+          </div>
+        )}
+
+        <div className="teams-container">
+          <div className="team-section">
+            <Card className="team-card">
+              <CardHeader>
+                <CardTitle>Team 1</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="team-players">
+                  {(['team1_player1', 'team1_player2'] as const).map((playerSlot, index) => {
+                    const player = game[playerSlot];
+                    const points = game[`${playerSlot}_points`];
+                    
+                    return (
+                      <div key={playerSlot} className="team-player">
+                        <h4>Player {index + 1}</h4>
+                        <div className="player-selector">
+                          <select
+                            value={player?.id || ""}
+                            onChange={(e) =>
+                              handlePlayerChange(playerSlot, e.target.value || null)
+                            }
+                            className="player-dropdown"
+                          >
+                            <option value="">Select Player</option>
+                            {getAvailablePlayers(playerSlot).map((availablePlayer) => (
+                              <option key={availablePlayer.id} value={availablePlayer.id}>
+                                {availablePlayer.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {player && (
+                          <div className="player-points-section">
+                            <div className="points-display">
+                              <span className="points-value">{points}</span>
+                              <span className="points-label">points</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="team-controls">
+                  <h4>Team Controls</h4>
+                  <div className="points-controls">
+                    <div className="points-row">
+                      <Button
+                        onClick={() => handleTeamPointsChange('team1', -1)}
+                        className="btn btn-sm btn-destructive"
+                        disabled={game?.team1_player1_points === 0 && game?.team1_player2_points === 0}
+                      >
+                        -1
+                      </Button>
+                      <Button
+                        onClick={() => handleTeamPointsChange('team1', 1)}
+                        className="btn btn-sm btn-green"
+                      >
+                        +1
+                      </Button>
+                    </div>
+                    <div className="points-row">
+                      <Button
+                        onClick={() => handleSetTeamPoints('team1', 15)}
+                        className="btn btn-sm btn-green-dark"
+                      >
+                        Set to 15
+                      </Button>
+                      <Button
+                        onClick={() => handleSetTeamPoints('team1', 21)}
+                        className="btn btn-sm btn-green-dark"
+                      >
+                        Set to 21
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="vs-divider">VS</div>
+
+          <div className="team-section">
+            <Card className="team-card">
+              <CardHeader>
+                <CardTitle>Team 2</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="team-players">
+                  {(['team2_player1', 'team2_player2'] as const).map((playerSlot, index) => {
+                    const player = game[playerSlot];
+                    const points = game[`${playerSlot}_points`];
+                    
+                    return (
+                      <div key={playerSlot} className="team-player">
+                        <h4>Player {index + 1}</h4>
+                        <div className="player-selector">
+                          <select
+                            value={player?.id || ""}
+                            onChange={(e) =>
+                              handlePlayerChange(playerSlot, e.target.value || null)
+                            }
+                            className="player-dropdown"
+                          >
+                            <option value="">Select Player</option>
+                            {getAvailablePlayers(playerSlot).map((availablePlayer) => (
+                              <option key={availablePlayer.id} value={availablePlayer.id}>
+                                {availablePlayer.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {player && (
+                          <div className="player-points-section">
+                            <div className="points-display">
+                              <span className="points-value">{points}</span>
+                              <span className="points-label">points</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="team-controls">
+                  <h4>Team Controls</h4>
+                  <div className="points-controls">
+                    <div className="points-row">
+                      <Button
+                        onClick={() => handleTeamPointsChange('team2', -1)}
+                        className="btn btn-sm btn-destructive"
+                        disabled={game?.team2_player1_points === 0 && game?.team2_player2_points === 0}
+                      >
+                        -1
+                      </Button>
+                      <Button
+                        onClick={() => handleTeamPointsChange('team2', 1)}
+                        className="btn btn-sm btn-green"
+                      >
+                        +1
+                      </Button>
+                    </div>
+                    <div className="points-row">
+                      <Button
+                        onClick={() => handleSetTeamPoints('team2', 15)}
+                        className="btn btn-sm btn-green-dark"
+                      >
+                        Set to 15
+                      </Button>
+                      <Button
+                        onClick={() => handleSetTeamPoints('team2', 21)}
+                        className="btn btn-sm btn-green-dark"
+                      >
+                        Set to 21
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
