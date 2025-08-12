@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Player, NewPlayer, UpdatePlayer, Game, NewGame, UpdateGame, GameWithPlayers, PlayerWithGamePoints } from '../types/database';
+import type { Player, NewPlayer, UpdatePlayer, Game, NewGame, UpdateGame, GameWithPlayers, PlayerWithGamePoints, UserPreferences, NewUserPreferences, SectionId } from '../types/database';
 
 export async function getAllPlayers(): Promise<Player[]> {
   const { data, error } = await supabase
@@ -409,4 +409,57 @@ export async function getAllPlayersWithGamePoints(): Promise<PlayerWithGamePoint
 
   // Sort by game points descending
   return playersWithGamePoints.sort((a, b) => b.game_points - a.game_points);
+}
+
+// User Preferences functions
+export async function getUserPreferences(userSessionId: string = 'default'): Promise<UserPreferences | null> {
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .select('*')
+    .eq('user_session_id', userSessionId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+    console.error('Error fetching user preferences:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createOrUpdateUserPreferences(preferences: NewUserPreferences, userSessionId: string = 'default'): Promise<UserPreferences> {
+  const updateData: any = {
+    user_session_id: userSessionId,
+  };
+  
+  if (preferences.section_order) {
+    updateData.section_order = preferences.section_order;
+  }
+  
+  if (preferences.collapsed_sections !== undefined) {
+    updateData.collapsed_sections = preferences.collapsed_sections;
+  }
+
+  const { data, error } = await supabase
+    .from('user_preferences')
+    .upsert(updateData, {
+      onConflict: 'user_session_id'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating/updating user preferences:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateSectionOrder(sectionOrder: SectionId[], userSessionId: string = 'default'): Promise<UserPreferences> {
+  return createOrUpdateUserPreferences({ section_order: sectionOrder }, userSessionId);
+}
+
+export async function updateCollapsedSections(collapsedSections: Record<SectionId, boolean>, userSessionId: string = 'default'): Promise<UserPreferences> {
+  return createOrUpdateUserPreferences({ collapsed_sections: collapsedSections }, userSessionId);
 }

@@ -719,6 +719,121 @@
   }
 }
 
+/* Collapsible sections */
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.collapsible-header:hover {
+  color: hsl(var(--primary));
+}
+
+.collapse-icon {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.collapse-icon.expanded {
+  transform: rotate(0deg);
+}
+
+.collapsible-content {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Drag and drop styles */
+.sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-container {
+  transition: all 0.2s ease;
+}
+
+.section-container.dragging {
+  transform: rotate(2deg);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.section-title-with-drag {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: hsl(var(--muted-foreground));
+  font-size: 1rem;
+  font-weight: bold;
+  padding: 0.25rem;
+  border-radius: calc(var(--radius));
+  transition: all 0.2s ease;
+  user-select: none;
+  line-height: 1;
+}
+
+.drag-handle:hover {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  background-color: hsl(var(--accent));
+}
+
+/* Actions grid layout */
+.actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.actions-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.actions-column h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Mobile responsive for actions grid */
+@media (max-width: 768px) {
+  .actions-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
 /* Team Controls */
 .team-controls {
   margin-top: 1.5rem;

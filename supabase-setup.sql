@@ -68,3 +68,29 @@ CREATE TRIGGER update_games_updated_at
     BEFORE UPDATE ON games 
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
+
+-- Create user preferences table for storing UI preferences
+CREATE TABLE user_preferences (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_session_id TEXT NOT NULL DEFAULT 'default',
+  section_order JSONB NOT NULL DEFAULT '["actions", "players-leaderboard", "game-history"]',
+  collapsed_sections JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- Ensure one preference per session
+  UNIQUE(user_session_id)
+);
+
+-- Enable Row Level Security for user_preferences
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Create policy to allow all operations on user_preferences
+CREATE POLICY "Allow all operations on user_preferences" ON user_preferences
+FOR ALL USING (true) WITH CHECK (true);
+
+-- Create trigger to automatically update updated_at for user_preferences
+CREATE TRIGGER update_user_preferences_updated_at 
+    BEFORE UPDATE ON user_preferences 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
