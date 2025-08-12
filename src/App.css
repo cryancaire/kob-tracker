@@ -262,6 +262,32 @@
   color: hsl(var(--destructive-foreground));
 }
 
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-green:disabled {
+  background-color: #9ca3af;
+  color: #6b7280;
+}
+
+.btn-green:disabled:hover {
+  background-color: #9ca3af;
+  color: #6b7280;
+}
+
+.btn-destructive:disabled {
+  background-color: #9ca3af;
+  color: #6b7280;
+}
+
+.btn-destructive:disabled:hover {
+  background-color: #9ca3af;
+  color: #6b7280;
+}
+
 /* Game-related styles */
 .player-selection h4 {
   margin-bottom: 1rem;

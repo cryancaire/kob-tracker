@@ -309,6 +309,7 @@ export function Home() {
                             <Button
                               onClick={handleStartNewGame}
                               className="btn btn-green btn-large"
+                              disabled={players.length < 4}
                             >
                               Start New Game
                             </Button>
@@ -316,6 +317,7 @@ export function Home() {
                               onClick={handleDeleteAllGames}
                               variant="destructive"
                               className="btn btn-destructive btn-large"
+                              disabled={games.length === 0}
                             >
                               Delete All Games
                             </Button>
@@ -339,6 +341,7 @@ export function Home() {
                                 onClick={handleDeleteAllPlayers}
                                 variant="destructive"
                                 className="btn btn-destructive"
+                                disabled={players.length === 0}
                               >
                                 Delete All Players
                               </Button>
