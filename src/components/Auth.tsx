@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
-import { Chrome } from "lucide-react";
 
 export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
