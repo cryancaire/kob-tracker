@@ -3,21 +3,21 @@ import { Button } from "./button";
 
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState<boolean>(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
-      return savedTheme === 'dark';
+      return savedTheme === "dark";
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
   useEffect(() => {
     const root = document.documentElement;
     if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      root.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      root.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     }
   }, [isDark]);
 
@@ -30,13 +30,11 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       variant="outline"
       size="sm"
-      className="theme-toggle"
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      className="btn theme-toggle"
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
-      {isDark ? '☀️' : '🌙'}
-      <span className="ml-2">
-        {isDark ? 'Light' : 'Dark'} Mode
-      </span>
+      {isDark ? "☀️" : "🌙"}
+      <span className="ml-2">{isDark ? "Light" : "Dark"} Mode</span>
     </Button>
   );
 }
