@@ -10,6 +10,7 @@ import {
   deleteGame,
   deleteAllGames,
   deleteEmptyGames,
+  endGame,
 } from "../lib/database";
 import type { PlayerWithGamePoints, GameWithPlayers } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
@@ -30,10 +31,10 @@ export function Home() {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Clean up empty games first
       await deleteEmptyGames();
-      
+
       const [playersData, gamesData] = await Promise.all([
         getAllPlayersWithGamePoints(),
         getAllGamesWithPlayers(),
@@ -42,9 +43,7 @@ export function Home() {
       setGames(gamesData); // Show all games
       setError(null);
     } catch (err) {
-      setError(
-        "Failed to load data. Please check your Supabase connection."
-      );
+      setError("Failed to load data. Please check your Supabase connection.");
       console.error("Error loading data:", err);
     } finally {
       setLoading(false);
@@ -63,7 +62,9 @@ export function Home() {
         total_points: newPlayer.points,
       };
       setPlayers((prev) =>
-        [...prev, newPlayerWithGamePoints].sort((a, b) => b.game_points - a.game_points)
+        [...prev, newPlayerWithGamePoints].sort(
+          (a, b) => b.game_points - a.game_points
+        )
       );
       setNewPlayerName("");
     } catch (err) {
@@ -72,12 +73,12 @@ export function Home() {
     }
   };
 
-
   const handleDeletePlayer = async (playerId: string) => {
     try {
       await deletePlayer(playerId);
-      // Reload all data to get updated totals
-      loadData();
+      // Remove player from local state immediately for seamless experience
+      setPlayers(prev => prev.filter(player => player.id !== playerId));
+      setError(null);
     } catch (err) {
       setError("Failed to delete player");
       console.error("Error deleting player:", err);
@@ -104,14 +105,36 @@ export function Home() {
     }
   };
 
+  const handleEndGame = async (gameId: string) => {
+    try {
+      await endGame(gameId);
+      // Update the game status to 'ended' immediately for seamless experience
+      setGames((prev) => prev.map((game) => 
+        game.id === gameId 
+          ? { ...game, status: 'ended' as const, ended_at: new Date().toISOString() }
+          : game
+      ));
+      setError(null);
+    } catch (err) {
+      setError("Failed to end game");
+      console.error("Error ending game:", err);
+    }
+  };
+
   const handleDeleteAllPlayers = async () => {
-    if (!confirm("Are you sure you want to delete ALL players? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete ALL players? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     try {
       await deleteAllPlayers();
-      loadData();
+      // Clear players immediately for seamless experience
+      setPlayers([]);
+      setError(null);
     } catch (err) {
       setError("Failed to delete all players");
       console.error("Error deleting all players:", err);
@@ -119,13 +142,25 @@ export function Home() {
   };
 
   const handleDeleteAllGames = async () => {
-    if (!confirm("Are you sure you want to delete ALL games? This action cannot be undone and will reset all player scores.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete ALL games? This action cannot be undone and will reset all player scores."
+      )
+    ) {
       return;
     }
 
     try {
       await deleteAllGames();
-      loadData();
+      // Clear games immediately and reset player scores for seamless experience
+      setGames([]);
+      // Reset all player game points to 0 since all games are deleted
+      setPlayers(prev => prev.map(player => ({
+        ...player,
+        game_points: 0,
+        total_points: player.points
+      })));
+      setError(null);
     } catch (err) {
       setError("Failed to delete all games");
       console.error("Error deleting all games:", err);
@@ -146,7 +181,7 @@ export function Home() {
   return (
     <div className="app">
       <div className="app-container">
-        <h1 className="app-title">KOB Player Tracker</h1>
+        <h1 className="app-title">KOB Tracker</h1>
 
         {error && (
           <div className="error-banner">
@@ -237,7 +272,9 @@ export function Home() {
                       </div>
                       <div className="player-details">
                         <h3 className="player-name">{player.name}</h3>
-                        <p className="player-points">{player.game_points} points</p>
+                        <p className="player-points">
+                          {player.game_points} points
+                        </p>
                       </div>
                     </div>
 
@@ -274,10 +311,12 @@ export function Home() {
                     <div className="game-info">
                       <div className="game-header-info">
                         <div className="game-date">
-                          {new Date(game.ended_at || game.created_at).toLocaleDateString()}
+                          {new Date(
+                            game.ended_at || game.created_at
+                          ).toLocaleDateString()}
                         </div>
                         <div className={`game-status ${game.status}`}>
-                          {game.status === 'active' ? 'Active' : 'Ended'}
+                          {game.status === "active" ? "Active" : "Ended"}
                         </div>
                       </div>
                       <div className="game-players">
@@ -285,14 +324,22 @@ export function Home() {
                           <div className="team-label">Team 1</div>
                           {game.team1_player1 && (
                             <div className="player-score">
-                              <span className="player-name">{game.team1_player1.name}</span>
-                              <span className="score">{game.team1_player1_points}</span>
+                              <span className="player-name">
+                                {game.team1_player1.name}
+                              </span>
+                              <span className="score">
+                                {game.team1_player1_points}
+                              </span>
                             </div>
                           )}
                           {game.team1_player2 && (
                             <div className="player-score">
-                              <span className="player-name">{game.team1_player2.name}</span>
-                              <span className="score">{game.team1_player2_points}</span>
+                              <span className="player-name">
+                                {game.team1_player2.name}
+                              </span>
+                              <span className="score">
+                                {game.team1_player2_points}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -301,27 +348,45 @@ export function Home() {
                           <div className="team-label">Team 2</div>
                           {game.team2_player1 && (
                             <div className="player-score">
-                              <span className="player-name">{game.team2_player1.name}</span>
-                              <span className="score">{game.team2_player1_points}</span>
+                              <span className="player-name">
+                                {game.team2_player1.name}
+                              </span>
+                              <span className="score">
+                                {game.team2_player1_points}
+                              </span>
                             </div>
                           )}
                           {game.team2_player2 && (
                             <div className="player-score">
-                              <span className="player-name">{game.team2_player2.name}</span>
-                              <span className="score">{game.team2_player2_points}</span>
+                              <span className="player-name">
+                                {game.team2_player2.name}
+                              </span>
+                              <span className="score">
+                                {game.team2_player2_points}
+                              </span>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
                     <div className="game-actions">
-                      {game.status === 'active' ? (
-                        <Button
-                          onClick={() => navigate(`/game/${game.id}`)}
-                          className="btn btn-sm btn-green"
-                        >
-                          Return to Game
-                        </Button>
+                      {game.status === "active" ? (
+                        <>
+                          <Button
+                            onClick={() => navigate(`/game/${game.id}`)}
+                            className="btn btn-sm btn-green"
+                          >
+                            Return to Game
+                          </Button>
+                          <Button
+                            onClick={() => handleEndGame(game.id)}
+                            variant="secondary"
+                            size="sm"
+                            className="btn btn-sm"
+                          >
+                            End Game
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           onClick={() => navigate(`/game/${game.id}`)}

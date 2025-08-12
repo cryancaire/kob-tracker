@@ -52,11 +52,18 @@ export function GameView() {
   }, [gameId, loadGameData]);
 
   const handlePlayerChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', playerId: string | null) => {
-    if (!gameId) return;
+    if (!gameId || !game) return;
 
     try {
       await updatePlayerInGame(gameId, playerSlot, playerId);
-      loadGameData();
+      
+      // Update local state immediately for seamless experience
+      const selectedPlayer = playerId ? players.find(p => p.id === playerId) : null;
+      setGame(prev => prev ? {
+        ...prev,
+        [playerSlot]: selectedPlayer
+      } : null);
+      setError(null);
     } catch (err) {
       setError("Failed to update player");
       console.error("Error updating player:", err);
@@ -82,7 +89,13 @@ export function GameView() {
         updatePlayerPointsInGame(gameId, player2Slot, newPoints2),
       ]);
       
-      loadGameData();
+      // Update local state immediately for seamless experience
+      setGame(prev => prev ? {
+        ...prev,
+        [`${player1Slot}_points`]: newPoints1,
+        [`${player2Slot}_points`]: newPoints2
+      } : null);
+      setError(null);
     } catch (err) {
       setError("Failed to update team points");
       console.error("Error updating team points:", err);
@@ -90,7 +103,7 @@ export function GameView() {
   };
 
   const handleSetTeamPoints = async (team: 'team1' | 'team2', points: number) => {
-    if (!gameId) return;
+    if (!gameId || !game) return;
 
     try {
       const player1Slot = `${team}_player1` as 'team1_player1' | 'team2_player1';
@@ -101,7 +114,13 @@ export function GameView() {
         updatePlayerPointsInGame(gameId, player2Slot, points),
       ]);
       
-      loadGameData();
+      // Update local state immediately for seamless experience
+      setGame(prev => prev ? {
+        ...prev,
+        [`${player1Slot}_points`]: points,
+        [`${player2Slot}_points`]: points
+      } : null);
+      setError(null);
     } catch (err) {
       setError("Failed to set team points");
       console.error("Error setting team points:", err);
