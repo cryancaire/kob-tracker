@@ -7,6 +7,7 @@ import {
   updatePlayerPointsInGame,
   endGame,
 } from "../lib/database";
+import { useAuth } from "../contexts/AuthContext";
 import type { GameWithPlayers, Player } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
@@ -14,6 +15,7 @@ import { Button } from "./ui/button";
 export function GameView() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [game, setGame] = useState<GameWithPlayers | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,10 +48,10 @@ export function GameView() {
   }, [gameId]);
 
   useEffect(() => {
-    if (gameId) {
+    if (gameId && !authLoading && user) {
       loadGameData();
     }
-  }, [gameId, loadGameData]);
+  }, [gameId, authLoading, user, loadGameData]);
 
   const handlePlayerChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', playerId: string | null) => {
     if (!gameId || !game) return;
@@ -159,12 +161,22 @@ export function GameView() {
     );
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="loading">
         <div className="loading-content">
           <div className="loading-spinner"></div>
           <p className="loading-text">Loading game...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="loading">
+        <div className="loading-content">
+          <p className="loading-text">Please sign in to view games...</p>
         </div>
       </div>
     );

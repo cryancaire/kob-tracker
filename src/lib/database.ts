@@ -31,9 +31,16 @@ export async function getPlayerById(id: string): Promise<Player | null> {
 }
 
 export async function createPlayer(player: NewPlayer): Promise<Player> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
+  const playerWithUserId = { ...player, user_id: user.id };
+  
   const { data, error } = await supabase
     .from('players')
-    .insert([player])
+    .insert([playerWithUserId])
     .select()
     .single();
 
@@ -196,9 +203,16 @@ export async function getGameById(id: string): Promise<Game | null> {
 }
 
 export async function createGame(game: NewGame): Promise<Game> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
+  const gameWithUserId = { ...game, user_id: user.id };
+  
   const { data, error } = await supabase
     .from('games')
-    .insert([game])
+    .insert([gameWithUserId])
     .select()
     .single();
 
@@ -289,9 +303,14 @@ export async function deleteGameIfEmpty(gameId: string): Promise<void> {
 }
 
 export async function createNewActiveGame(): Promise<Game> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
   const { data, error } = await supabase
     .from('games')
-    .insert([{ status: 'active' }])
+    .insert([{ status: 'active', user_id: user.id }])
     .select()
     .single();
 
@@ -412,11 +431,16 @@ export async function getAllPlayersWithGamePoints(): Promise<PlayerWithGamePoint
 }
 
 // User Preferences functions
-export async function getUserPreferences(userSessionId: string = 'default'): Promise<UserPreferences | null> {
+export async function getUserPreferences(): Promise<UserPreferences | null> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('user_preferences')
     .select('*')
-    .eq('user_session_id', userSessionId)
+    .eq('user_id', user.id)
     .single();
 
   if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
@@ -427,9 +451,14 @@ export async function getUserPreferences(userSessionId: string = 'default'): Pro
   return data;
 }
 
-export async function createOrUpdateUserPreferences(preferences: NewUserPreferences, userSessionId: string = 'default'): Promise<UserPreferences> {
+export async function createOrUpdateUserPreferences(preferences: NewUserPreferences): Promise<UserPreferences> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
   const updateData: any = {
-    user_session_id: userSessionId,
+    user_id: user.id,
   };
   
   if (preferences.section_order) {
@@ -443,7 +472,7 @@ export async function createOrUpdateUserPreferences(preferences: NewUserPreferen
   const { data, error } = await supabase
     .from('user_preferences')
     .upsert(updateData, {
-      onConflict: 'user_session_id'
+      onConflict: 'user_id'
     })
     .select()
     .single();
@@ -456,10 +485,10 @@ export async function createOrUpdateUserPreferences(preferences: NewUserPreferen
   return data;
 }
 
-export async function updateSectionOrder(sectionOrder: SectionId[], userSessionId: string = 'default'): Promise<UserPreferences> {
-  return createOrUpdateUserPreferences({ section_order: sectionOrder }, userSessionId);
+export async function updateSectionOrder(sectionOrder: SectionId[]): Promise<UserPreferences> {
+  return createOrUpdateUserPreferences({ section_order: sectionOrder });
 }
 
-export async function updateCollapsedSections(collapsedSections: Record<SectionId, boolean>, userSessionId: string = 'default'): Promise<UserPreferences> {
-  return createOrUpdateUserPreferences({ collapsed_sections: collapsedSections }, userSessionId);
+export async function updateCollapsedSections(collapsedSections: Record<SectionId, boolean>): Promise<UserPreferences> {
+  return createOrUpdateUserPreferences({ collapsed_sections: collapsedSections });
 }

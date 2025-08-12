@@ -2,6 +2,7 @@ export interface Player {
   id: string;
   name: string;
   points: number;
+  user_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +35,7 @@ export interface Game {
   team2_player2_id: string | null;
   team2_player2_points: number;
   status: GameStatus;
+  user_id: string;
   created_at: string;
   updated_at: string;
   ended_at: string | null;
@@ -84,7 +86,7 @@ export type SectionId = 'actions' | 'players-leaderboard' | 'game-history';
 
 export interface UserPreferences {
   id: string;
-  user_session_id: string;
+  user_id: string;
   section_order: SectionId[];
   collapsed_sections: Record<SectionId, boolean>;
   created_at: string;
@@ -92,7 +94,6 @@ export interface UserPreferences {
 }
 
 export interface NewUserPreferences {
-  user_session_id?: string;
   section_order?: SectionId[];
   collapsed_sections?: Record<SectionId, boolean>;
 }

@@ -16,23 +16,16 @@ import {
   updateSectionOrder,
   updateCollapsedSections,
 } from "../lib/database";
+import { useAuth } from "../contexts/AuthContext";
 import type { PlayerWithGamePoints, GameWithPlayers, SectionId } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ui/theme-toggle";
 
-// Generate a simple session ID for the user (in a real app, you'd use proper auth)
-const getUserSessionId = (): string => {
-  let sessionId = localStorage.getItem('user-session-id');
-  if (!sessionId) {
-    sessionId = 'user-' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('user-session-id', sessionId);
-  }
-  return sessionId;
-};
 
 export function Home() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [players, setPlayers] = useState<PlayerWithGamePoints[]>([]);
   const [games, setGames] = useState<GameWithPlayers[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
@@ -46,8 +39,10 @@ export function Home() {
   ]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!authLoading && user) {
+      loadData();
+    }
+  }, [authLoading, user]);
 
   const loadData = async () => {
     try {
@@ -59,7 +54,7 @@ export function Home() {
       const [playersData, gamesData, userPrefs] = await Promise.all([
         getAllPlayersWithGamePoints(),
         getAllGamesWithPlayers(),
-        getUserPreferences(getUserSessionId()),
+        getUserPreferences(),
       ]);
       
       setPlayers(playersData);
@@ -77,7 +72,7 @@ export function Home() {
           }
           // Save the migrated order
           try {
-            await updateSectionOrder(sectionOrder, getUserSessionId());
+            await updateSectionOrder(sectionOrder);
           } catch (err) {
             console.error('Error migrating section order:', err);
           }
@@ -236,7 +231,7 @@ export function Home() {
 
     // Save to database
     try {
-      await updateSectionOrder(newSectionOrder, getUserSessionId());
+      await updateSectionOrder(newSectionOrder);
     } catch (err) {
       console.error('Error saving section order:', err);
       setError('Failed to save section order');
@@ -254,7 +249,7 @@ export function Home() {
     
     // Save to database
     try {
-      await updateCollapsedSections(newCollapsedSections, getUserSessionId());
+      await updateCollapsedSections(newCollapsedSections);
     } catch (err) {
       console.error('Error saving collapsed state:', err);
       setError('Failed to save section state');
@@ -588,46 +583,48 @@ export function Home() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
-      <div className="loading">
-        <div className="loading-content">
-          <div className="loading-spinner"></div>
-          <p className="loading-text">Loading players...</p>
-        </div>
+      <div className="loading-content">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Loading players...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="loading-content">
+        <p className="loading-text">Please sign in to continue...</p>
       </div>
     );
   }
 
   return (
-    <div className="app">
-      <div className="app-container">
-        <h1 className="app-title">KOB Tracker</h1>
+    <>
+      {error && (
+        <div className="error-banner">
+          {error}
+          <button onClick={() => setError(null)} className="error-close">
+            ✕
+          </button>
+        </div>
+      )}
 
-        {error && (
-          <div className="error-banner">
-            {error}
-            <button onClick={() => setError(null)} className="error-close">
-              ✕
-            </button>
-          </div>
-        )}
-
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="sections">
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="sections-container"
-              >
-                {sectionOrder.map((sectionId, index) => renderSection(sectionId, index))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
-      </div>
-    </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="sections">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="sections-container"
+            >
+              {sectionOrder.map((sectionId, index) => renderSection(sectionId, index))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </>
   );
 }
