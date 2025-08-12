@@ -19,6 +19,7 @@ import {
 import type { PlayerWithGamePoints, GameWithPlayers, SectionId } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
+import { ThemeToggle } from "./ui/theme-toggle";
 
 // Generate a simple session ID for the user (in a real app, you'd use proper auth)
 const getUserSessionId = (): string => {
@@ -289,9 +290,14 @@ export function Home() {
                         </div>
                         <CardTitle>Actions</CardTitle>
                       </div>
-                      <span className={`collapse-icon ${isSectionExpanded('actions') ? 'expanded' : ''}`}>
-                        ▼
-                      </span>
+                      <div className="header-controls">
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ThemeToggle />
+                        </div>
+                        <span className={`collapse-icon ${isSectionExpanded('actions') ? 'expanded' : ''}`}>
+                          ▼
+                        </span>
+                      </div>
                     </div>
                   </CardHeader>
                   {isSectionExpanded('actions') && (
