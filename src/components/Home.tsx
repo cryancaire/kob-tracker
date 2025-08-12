@@ -11,7 +11,7 @@ import {
   deleteAllGames,
   deleteEmptyGames,
 } from "../lib/database";
-import type { Player, PlayerWithGamePoints, GameWithPlayers } from "../types/database";
+import type { PlayerWithGamePoints, GameWithPlayers } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 
@@ -57,8 +57,13 @@ export function Home() {
 
     try {
       const newPlayer = await createPlayer({ name: newPlayerName.trim() });
+      const newPlayerWithGamePoints: PlayerWithGamePoints = {
+        ...newPlayer,
+        game_points: 0,
+        total_points: newPlayer.points,
+      };
       setPlayers((prev) =>
-        [...prev, newPlayer].sort((a, b) => b.points - a.points)
+        [...prev, newPlayerWithGamePoints].sort((a, b) => b.game_points - a.game_points)
       );
       setNewPlayerName("");
     } catch (err) {

@@ -126,7 +126,7 @@ export async function getAllGamesWithPlayers(): Promise<GameWithPlayers[]> {
     throw error;
   }
 
-  return (data || []).map((game: any) => ({
+  return (data || []).map((game) => ({
     id: game.id,
     team1_player1: game.team1_player1,
     team1_player1_points: game.team1_player1_points,

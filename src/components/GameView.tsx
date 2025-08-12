@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   getGameWithPlayersById,
@@ -6,8 +6,6 @@ import {
   updatePlayerInGame,
   updatePlayerPointsInGame,
   endGame,
-  deleteEmptyGames,
-  deleteGameIfEmpty,
 } from "../lib/database";
 import type { GameWithPlayers, Player } from "../types/database";
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
@@ -21,14 +19,7 @@ export function GameView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (gameId) {
-      loadGameData();
-    }
-  }, [gameId]);
-
-
-  const loadGameData = async () => {
+  const loadGameData = useCallback(async () => {
     if (!gameId) return;
     
     try {
@@ -52,7 +43,13 @@ export function GameView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [gameId]);
+
+  useEffect(() => {
+    if (gameId) {
+      loadGameData();
+    }
+  }, [gameId, loadGameData]);
 
   const handlePlayerChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', playerId: string | null) => {
     if (!gameId) return;
@@ -66,32 +63,6 @@ export function GameView() {
     }
   };
 
-  const handlePointsChange = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', pointsToAdd: number) => {
-    if (!gameId || !game) return;
-
-    const currentPoints = game[`${playerSlot}_points`];
-    const newPoints = Math.max(0, currentPoints + pointsToAdd);
-
-    try {
-      await updatePlayerPointsInGame(gameId, playerSlot, newPoints);
-      loadGameData();
-    } catch (err) {
-      setError("Failed to update points");
-      console.error("Error updating points:", err);
-    }
-  };
-
-  const handleSetPoints = async (playerSlot: 'team1_player1' | 'team1_player2' | 'team2_player1' | 'team2_player2', points: number) => {
-    if (!gameId) return;
-
-    try {
-      await updatePlayerPointsInGame(gameId, playerSlot, points);
-      loadGameData();
-    } catch (err) {
-      setError("Failed to set points");
-      console.error("Error setting points:", err);
-    }
-  };
 
   const handleTeamPointsChange = async (team: 'team1' | 'team2', pointsToAdd: number) => {
     if (!gameId || !game) return;
