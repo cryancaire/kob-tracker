@@ -151,7 +151,28 @@ export function Home() {
       // Update the games list with the new games
       await loadData(); // Reload all data to get the updated games
       
-      setSuccess(`Successfully created ${createdGames.length} games! Each player will play with different teammates.`);
+      // Analyze which players were included in partnerships
+      const playersInPartnerships = new Set<string>();
+      createdGames.forEach(game => {
+        if (game.team1_player1_id) playersInPartnerships.add(game.team1_player1_id);
+        if (game.team1_player2_id) playersInPartnerships.add(game.team1_player2_id);
+        if (game.team2_player1_id) playersInPartnerships.add(game.team2_player1_id);
+        if (game.team2_player2_id) playersInPartnerships.add(game.team2_player2_id);
+      });
+      
+      const leftOutPlayers = allPlayers.filter(player => !playersInPartnerships.has(player.id));
+      
+      // Create comprehensive success message
+      let successMessage = `Successfully created ${createdGames.length} game${createdGames.length === 1 ? '' : 's'}!`;
+      
+      if (leftOutPlayers.length === 0) {
+        successMessage += ' Every player will get to partner with different teammates.';
+      } else {
+        const leftOutNames = leftOutPlayers.map(player => player.name).join(', ');
+        successMessage += ` ${leftOutNames} ${leftOutPlayers.length === 1 ? 'was' : 'were'} left out of some partnerships due to pairing constraints. You may need to manually create additional games for complete round-robin play.`;
+      }
+      
+      setSuccess(successMessage);
       setError(null);
     } catch (err) {
       setError("Failed to generate round robin games");
