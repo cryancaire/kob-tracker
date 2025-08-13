@@ -24,6 +24,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ui/theme-toggle";
 import { LiveTimer } from "./ui/live-timer";
+import { ConfirmModal } from "./ui/confirm-modal";
 
 
 export function Home() {
@@ -35,6 +36,8 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showDeletePlayersDialog, setShowDeletePlayersDialog] = useState(false);
+  const [showDeleteGamesDialog, setShowDeleteGamesDialog] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionId, boolean>>({} as Record<SectionId, boolean>);
   const [sectionOrder, setSectionOrder] = useState<SectionId[]>([
     'actions',
@@ -182,15 +185,7 @@ export function Home() {
     }
   };
 
-  const handleDeleteAllPlayers = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete ALL players? This action cannot be undone."
-      )
-    ) {
-      return;
-    }
-
+  const confirmDeleteAllPlayers = async () => {
     try {
       await deleteAllPlayers();
       // Clear players immediately for seamless experience
@@ -202,15 +197,7 @@ export function Home() {
     }
   };
 
-  const handleDeleteAllGames = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete ALL games? This action cannot be undone and will reset all player scores."
-      )
-    ) {
-      return;
-    }
-
+  const confirmDeleteAllGames = async () => {
     try {
       await deleteAllGames();
       // Clear games immediately and reset player scores for seamless experience
@@ -336,7 +323,7 @@ export function Home() {
                               Auto-Generate All Games
                             </Button>
                             <Button
-                              onClick={handleDeleteAllGames}
+                              onClick={() => setShowDeleteGamesDialog(true)}
                               variant="destructive"
                               className="btn btn-destructive btn-large"
                               disabled={games.length === 0}
@@ -363,7 +350,7 @@ export function Home() {
                               <Button className="btn btn-green">Add Player</Button>
                               <Button
                                 type="button"
-                                onClick={handleDeleteAllPlayers}
+                                onClick={() => setShowDeletePlayersDialog(true)}
                                 variant="destructive"
                                 className="btn btn-destructive"
                                 disabled={players.length === 0}
@@ -674,6 +661,24 @@ export function Home() {
           )}
         </Droppable>
       </DragDropContext>
+
+      <ConfirmModal
+        isOpen={showDeleteGamesDialog}
+        onClose={() => setShowDeleteGamesDialog(false)}
+        onConfirm={confirmDeleteAllGames}
+        title="Delete All Games"
+        description="Are you sure you want to delete ALL games? This action cannot be undone and will reset all player scores."
+        confirmText="Delete All Games"
+      />
+
+      <ConfirmModal
+        isOpen={showDeletePlayersDialog}
+        onClose={() => setShowDeletePlayersDialog(false)}
+        onConfirm={confirmDeleteAllPlayers}
+        title="Delete All Players"
+        description="Are you sure you want to delete ALL players? This action cannot be undone."
+        confirmText="Delete All Players"
+      />
     </>
   );
 }
