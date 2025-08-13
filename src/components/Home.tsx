@@ -187,18 +187,38 @@ export function Home() {
 
   const confirmDeleteAllPlayers = async () => {
     try {
-      await deleteAllPlayers();
-      // Clear players immediately for seamless experience
+      const playerCount = players.length;
+      const gameCount = games.length;
+      
+      // Delete both players and games since games depend on players
+      await Promise.all([
+        deleteAllPlayers(),
+        deleteAllGames()
+      ]);
+      
+      // Clear both players and games immediately for seamless experience
       setPlayers([]);
+      setGames([]);
       setError(null);
+      
+      // Create comprehensive success message
+      let successMessage = `Successfully deleted ${playerCount} player${playerCount === 1 ? '' : 's'}`;
+      if (gameCount > 0) {
+        successMessage += ` and ${gameCount} game${gameCount === 1 ? '' : 's'}`;
+      }
+      successMessage += '!';
+      
+      setSuccess(successMessage);
     } catch (err) {
-      setError("Failed to delete all players");
-      console.error("Error deleting all players:", err);
+      console.error("Error deleting all players and games:", err);
+      setError("Failed to delete all players and games");
+      // Don't throw the error, just handle it gracefully
     }
   };
 
   const confirmDeleteAllGames = async () => {
     try {
+      const gameCount = games.length;
       await deleteAllGames();
       // Clear games immediately and reset player scores for seamless experience
       setGames([]);
@@ -209,9 +229,11 @@ export function Home() {
         total_points: player.points
       })));
       setError(null);
+      setSuccess(`Successfully deleted ${gameCount} game${gameCount === 1 ? '' : 's'}!`);
     } catch (err) {
-      setError("Failed to delete all games");
       console.error("Error deleting all games:", err);
+      setError("Failed to delete all games");
+      // Don't throw the error, just handle it gracefully
     }
   };
 
@@ -527,7 +549,7 @@ export function Home() {
                                           {game.team1_player2.name}
                                         </span>
                                         <span className="score">
-                                          {game.team1_player2_points}
+                                          {game.team1_player1_points}
                                         </span>
                                       </div>
                                     )}
@@ -551,7 +573,7 @@ export function Home() {
                                           {game.team2_player2.name}
                                         </span>
                                         <span className="score">
-                                          {game.team2_player2_points}
+                                          {game.team2_player1_points}
                                         </span>
                                       </div>
                                     )}
@@ -676,7 +698,7 @@ export function Home() {
         onClose={() => setShowDeletePlayersDialog(false)}
         onConfirm={confirmDeleteAllPlayers}
         title="Delete All Players"
-        description="Are you sure you want to delete ALL players? This action cannot be undone."
+        description="Are you sure you want to delete ALL players? This will also delete all games since they depend on player data. This action cannot be undone."
         confirmText="Delete All Players"
       />
     </>

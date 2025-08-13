@@ -4,7 +4,7 @@ import { Button } from './button';
 interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   title: string;
   description: string;
   confirmText: string;
@@ -30,8 +30,16 @@ export function ConfirmModal({
     }
   };
 
-  const handleConfirm = () => {
-    onConfirm();
+  const handleConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      await onConfirm();
+    } catch (err) {
+      console.error('Error in modal confirm handler:', err);
+    }
+    
     onClose();
   };
 
@@ -51,7 +59,11 @@ export function ConfirmModal({
         
         <div className="modal-footer">
           <Button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             variant="outline"
             className="btn btn-outline"
           >
