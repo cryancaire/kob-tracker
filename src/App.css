@@ -439,6 +439,35 @@
   padding: 1rem;
 }
 
+/* Logistics Card */
+.logistics-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.logistics-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.5rem;
+}
+
+.logistics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.logistics-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  margin: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
 /* Timer Card */
 .timer-card {
   margin-bottom: 1.5rem;
@@ -520,6 +549,30 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* Game View Drag and Drop */
+.sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-container {
+  transition: transform 0.2s ease;
+}
+
+.section-container.dragging {
+  transform: rotate(2deg);
+  z-index: 1000;
+  opacity: 0.9;
+}
+
+.switch-sides-controls-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
 }
 
 /* Switch Sides Controls */
@@ -1496,6 +1549,15 @@
   .timer-controls {
     justify-content: center;
     gap: 0.5rem;
+  }
+
+  .logistics-content {
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .logistics-section-title {
+    font-size: 0.875rem;
   }
   
   

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   getGameWithPlayersById,
   getAllPlayers,
@@ -14,6 +15,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { LiveTimer } from "./ui/live-timer";
 
+type GameViewSectionId = 'logistics' | 'teams';
+
 export function GameView() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -22,6 +25,11 @@ export function GameView() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Record<GameViewSectionId, boolean>>({} as Record<GameViewSectionId, boolean>);
+  const [sectionOrder, setSectionOrder] = useState<GameViewSectionId[]>([
+    'logistics',
+    'teams'
+  ]);
 
   const loadGameData = useCallback(async () => {
     if (!gameId) return;
@@ -286,6 +294,402 @@ export function GameView() {
     return totalScore > 0 && totalScore % game.switch_sides_interval === 0;
   };
 
+  const handleDragEnd = (result: any) => {
+    const { destination, source } = result;
+
+    if (!destination || destination.index === source.index) {
+      return;
+    }
+
+    const newSectionOrder = Array.from(sectionOrder);
+    const [reorderedItem] = newSectionOrder.splice(source.index, 1);
+    newSectionOrder.splice(destination.index, 0, reorderedItem);
+
+    setSectionOrder(newSectionOrder);
+  };
+
+  const handleSectionToggle = (sectionId: GameViewSectionId) => {
+    const newCollapsedSections = {
+      ...collapsedSections,
+      [sectionId]: !collapsedSections[sectionId]
+    };
+    setCollapsedSections(newCollapsedSections);
+  };
+
+  const isSectionExpanded = (sectionId: GameViewSectionId): boolean => {
+    return !collapsedSections[sectionId];
+  };
+
+  const renderGameActions = () => {
+    if (!game) return null;
+    
+    return (
+      <Card className="game-actions-card">
+        <CardContent className="game-actions-content">
+          <Button onClick={() => navigate("/")} className="btn btn-outline">
+            Back to Home
+          </Button>
+          {game.status === "active" ? (
+            <Button onClick={handleEndGame} className="btn btn-destructive">
+              End Game
+            </Button>
+          ) : (
+            <Button onClick={handleSaveAndReturn} className="btn btn-green">
+              Save Changes
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  const renderSection = (sectionId: GameViewSectionId, index: number) => {
+    if (!game) return null;
+    
+    switch (sectionId) {
+      case 'logistics':
+        return (
+          <Draggable key={sectionId} draggableId={sectionId} index={index}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                className={`section-container ${snapshot.isDragging ? 'dragging' : ''}`}
+              >
+                <Card className="logistics-card">
+                  <CardHeader>
+                    <div className="collapsible-header" onClick={() => handleSectionToggle('logistics')}>
+                      <div className="section-title-with-drag">
+                        <div 
+                          {...provided.dragHandleProps} 
+                          className="drag-handle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ⋮⋮
+                        </div>
+                        <CardTitle>Logistics</CardTitle>
+                      </div>
+                      <span className={`collapse-icon ${isSectionExpanded('logistics') ? 'expanded' : ''}`}>
+                        ▼
+                      </span>
+                    </div>
+                  </CardHeader>
+                  {isSectionExpanded('logistics') && (
+                    <CardContent className="logistics-content collapsible-content">
+                      {/* Timer Section */}
+                      <div className="logistics-section">
+                        <h4 className="logistics-section-title">Game Timer</h4>
+                        <div className="timer-content">
+                          <div className="timer-display">
+                            <LiveTimer 
+                              startTime={game.created_at} 
+                              endTime={game.ended_at}
+                              timerStartedAt={game.timer_started_at || null}
+                              timerPausedAt={game.timer_paused_at || null}
+                              timerTotalPausedTime={game.timer_total_paused_time || 0}
+                              className="main-timer"
+                            />
+                          </div>
+                          {game.status === "active" && (
+                            <div className="timer-controls">
+                              {!(game.timer_started_at) ? (
+                                <Button 
+                                  onClick={handleStartTimer}
+                                  className="btn btn-green"
+                                >
+                                  Start Timer
+                                </Button>
+                              ) : (game.timer_paused_at) ? (
+                                <Button 
+                                  onClick={handleResumeTimer}
+                                  className="btn btn-green"
+                                >
+                                  Resume Timer
+                                </Button>
+                              ) : (
+                                <Button 
+                                  onClick={handlePauseTimer}
+                                  className="btn btn-destructive"
+                                >
+                                  Pause Timer
+                                </Button>
+                              )}
+                              <Button 
+                                onClick={handleResetTimer}
+                                className="btn btn-outline"
+                              >
+                                Reset Timer
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Switch Sides Section */}
+                      {game.status === "active" && (
+                        <div className="logistics-section">
+                          <h4 className="logistics-section-title">Switch Sides</h4>
+                          <div className="switch-sides-controls-content">
+                            <div className="switch-sides-label">Switch Sides Every:</div>
+                            <div className="switch-sides-buttons">
+                              <Button
+                                onClick={() => handleSwitchSidesInterval(5)}
+                                className={`btn btn-sm ${game.switch_sides_interval === 5 ? 'btn-green' : 'btn-outline'}`}
+                              >
+                                5 Points
+                              </Button>
+                              <Button
+                                onClick={() => handleSwitchSidesInterval(7)}
+                                className={`btn btn-sm ${game.switch_sides_interval === 7 ? 'btn-green' : 'btn-outline'}`}
+                              >
+                                7 Points
+                              </Button>
+                              <Button
+                                onClick={() => handleSwitchSidesInterval(null)}
+                                className={`btn btn-sm ${!game.switch_sides_interval ? 'btn-green' : 'btn-outline'}`}
+                              >
+                                Off
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
+                </Card>
+              </div>
+            )}
+          </Draggable>
+        );
+
+      case 'teams':
+        return (
+          <Draggable key={sectionId} draggableId={sectionId} index={index}>
+            {(provided, snapshot) => (
+              <div
+                ref={provided.innerRef}
+                {...provided.draggableProps}
+                className={`section-container ${snapshot.isDragging ? 'dragging' : ''}`}
+              >
+                <Card>
+                  <CardHeader>
+                    <div className="collapsible-header" onClick={() => handleSectionToggle('teams')}>
+                      <div className="section-title-with-drag">
+                        <div 
+                          {...provided.dragHandleProps} 
+                          className="drag-handle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ⋮⋮
+                        </div>
+                        <CardTitle>Teams</CardTitle>
+                      </div>
+                      <span className={`collapse-icon ${isSectionExpanded('teams') ? 'expanded' : ''}`}>
+                        ▼
+                      </span>
+                    </div>
+                  </CardHeader>
+                  {isSectionExpanded('teams') && (
+                    <CardContent className="collapsible-content">
+                      <div className="teams-container">
+                        {/* Move the existing teams content here */}
+                        <div className="team-section">
+                          <Card className="team-card">
+                            <CardHeader>
+                              <CardTitle>Team 1</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="team-section-content">
+                                <div className="team-players-combined">
+                                  {(["team1_player1", "team1_player2"] as const).map(
+                                    (playerSlot, index) => {
+                                      const player = game[playerSlot];
+
+                                      return (
+                                        <div key={playerSlot} className="player-selector-row">
+                                          <label className="player-label">Player {index + 1}</label>
+                                          <select
+                                            value={player?.id || ""}
+                                            onChange={(e) =>
+                                              handlePlayerChange(
+                                                playerSlot,
+                                                e.target.value || null
+                                              )
+                                            }
+                                            className="player-dropdown"
+                                          >
+                                            <option value="">Select Player</option>
+                                            {getAvailablePlayers(playerSlot).map(
+                                              (availablePlayer) => (
+                                                <option
+                                                  key={availablePlayer.id}
+                                                  value={availablePlayer.id}
+                                                >
+                                                  {availablePlayer.name}
+                                                </option>
+                                              )
+                                            )}
+                                          </select>
+                                        </div>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                                
+                                <div className="team-points-display">
+                                  <div className="points-value">
+                                    {game.team1_player1_points + game.team1_player2_points}
+                                  </div>
+                                  <div className="points-label">Team Points</div>
+                                </div>
+                              </div>
+
+                              <div className="team-controls">
+                                <h4>Team Controls</h4>
+                                <div className="points-controls">
+                                  <div className="points-row">
+                                    <Button
+                                      onClick={() => handleTeamPointsChange("team1", -1)}
+                                      className="btn btn-sm btn-destructive"
+                                      disabled={
+                                        game?.team1_player1_points === 0
+                                      }
+                                    >
+                                      -1
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleTeamPointsChange("team1", 1)}
+                                      className="btn btn-sm btn-green"
+                                    >
+                                      +1
+                                    </Button>
+                                  </div>
+                                  <div className="points-row">
+                                    <Button
+                                      onClick={() => handleSetTeamPoints("team1", 15)}
+                                      className="btn btn-sm btn-green-dark"
+                                    >
+                                      Set to 15
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleSetTeamPoints("team1", 21)}
+                                      className="btn btn-sm btn-green-dark"
+                                    >
+                                      Set to 21
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        <div className="vs-divider">VS</div>
+
+                        <div className="team-section">
+                          <Card className="team-card">
+                            <CardHeader>
+                              <CardTitle>Team 2</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="team-section-content">
+                                <div className="team-players-combined">
+                                  {(["team2_player1", "team2_player2"] as const).map(
+                                    (playerSlot, index) => {
+                                      const player = game[playerSlot];
+
+                                      return (
+                                        <div key={playerSlot} className="player-selector-row">
+                                          <label className="player-label">Player {index + 1}</label>
+                                          <select
+                                            value={player?.id || ""}
+                                            onChange={(e) =>
+                                              handlePlayerChange(
+                                                playerSlot,
+                                                e.target.value || null
+                                              )
+                                            }
+                                            className="player-dropdown"
+                                          >
+                                            <option value="">Select Player</option>
+                                            {getAvailablePlayers(playerSlot).map(
+                                              (availablePlayer) => (
+                                                <option
+                                                  key={availablePlayer.id}
+                                                  value={availablePlayer.id}
+                                                >
+                                                  {availablePlayer.name}
+                                                </option>
+                                              )
+                                            )}
+                                          </select>
+                                        </div>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                                
+                                <div className="team-points-display">
+                                  <div className="points-value">
+                                    {game.team2_player1_points + game.team2_player2_points}
+                                  </div>
+                                  <div className="points-label">Team Points</div>
+                                </div>
+                              </div>
+
+                              <div className="team-controls">
+                                <h4>Team Controls</h4>
+                                <div className="points-controls">
+                                  <div className="points-row">
+                                    <Button
+                                      onClick={() => handleTeamPointsChange("team2", -1)}
+                                      className="btn btn-sm btn-destructive"
+                                      disabled={
+                                        game?.team2_player1_points === 0
+                                      }
+                                    >
+                                      -1
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleTeamPointsChange("team2", 1)}
+                                      className="btn btn-sm btn-green"
+                                    >
+                                      +1
+                                    </Button>
+                                  </div>
+                                  <div className="points-row">
+                                    <Button
+                                      onClick={() => handleSetTeamPoints("team2", 15)}
+                                      className="btn btn-sm btn-green-dark"
+                                    >
+                                      Set to 15
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleSetTeamPoints("team2", 21)}
+                                      className="btn btn-sm btn-green-dark"
+                                    >
+                                      Set to 21
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              </div>
+            )}
+          </Draggable>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const getAvailablePlayers = (currentPlayerSlot: string) => {
     const assignedPlayerIds = [
       game?.team1_player1?.id,
@@ -347,102 +751,6 @@ export function GameView() {
             {game.status === "active" ? "Active Game" : "Edit Game"}
           </h1>
         </div>
-
-        {/* Game Actions Card */}
-        <Card className="game-actions-card">
-          <CardContent className="game-actions-content">
-            <Button onClick={() => navigate("/")} className="btn btn-outline">
-              Back to Home
-            </Button>
-            {game.status === "active" ? (
-              <Button onClick={handleEndGame} className="btn btn-destructive">
-                End Game
-              </Button>
-            ) : (
-              <Button onClick={handleSaveAndReturn} className="btn btn-green">
-                Save Changes
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Timer Card */}
-        <Card className="timer-card">
-          <CardHeader>
-            <CardTitle>Game Timer</CardTitle>
-          </CardHeader>
-          <CardContent className="timer-content">
-            <div className="timer-display">
-              <LiveTimer 
-                startTime={game.created_at} 
-                endTime={game.ended_at}
-                timerStartedAt={game.timer_started_at || null}
-                timerPausedAt={game.timer_paused_at || null}
-                timerTotalPausedTime={game.timer_total_paused_time || 0}
-                className="main-timer"
-              />
-            </div>
-            {game.status === "active" && (
-              <div className="timer-controls">
-                {!(game.timer_started_at) ? (
-                  <Button 
-                    onClick={handleStartTimer}
-                    className="btn btn-green"
-                  >
-                    Start Timer
-                  </Button>
-                ) : (game.timer_paused_at) ? (
-                  <Button 
-                    onClick={handleResumeTimer}
-                    className="btn btn-green"
-                  >
-                    Resume Timer
-                  </Button>
-                ) : (
-                  <Button 
-                    onClick={handlePauseTimer}
-                    className="btn btn-destructive"
-                  >
-                    Pause Timer
-                  </Button>
-                )}
-                <Button 
-                  onClick={handleResetTimer}
-                  className="btn btn-outline"
-                >
-                  Reset Timer
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Switch Sides Controls */}
-        {game.status === "active" && (
-          <div className="switch-sides-controls">
-            <div className="switch-sides-label">Switch Sides Every:</div>
-            <div className="switch-sides-buttons">
-              <Button
-                onClick={() => handleSwitchSidesInterval(5)}
-                className={`btn btn-sm ${game.switch_sides_interval === 5 ? 'btn-green' : 'btn-outline'}`}
-              >
-                5 Points
-              </Button>
-              <Button
-                onClick={() => handleSwitchSidesInterval(7)}
-                className={`btn btn-sm ${game.switch_sides_interval === 7 ? 'btn-green' : 'btn-outline'}`}
-              >
-                7 Points
-              </Button>
-              <Button
-                onClick={() => handleSwitchSidesInterval(null)}
-                className={`btn btn-sm ${!game.switch_sides_interval ? 'btn-green' : 'btn-outline'}`}
-              >
-                Off
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Switch Sides Indicator */}
         {shouldShowSwitchSides() && (
@@ -578,191 +886,24 @@ export function GameView() {
           </Card>
         </div>
 
-        <div className="teams-container">
-          <div className="team-section">
-            <Card className="team-card">
-              <CardHeader>
-                <CardTitle>Team 1</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="team-section-content">
-                  <div className="team-players-combined">
-                    {(["team1_player1", "team1_player2"] as const).map(
-                      (playerSlot, index) => {
-                        const player = game[playerSlot];
+        {/* Fixed Game Actions */}
+        {renderGameActions()}
 
-                        return (
-                          <div key={playerSlot} className="player-selector-row">
-                            <label className="player-label">Player {index + 1}</label>
-                            <select
-                              value={player?.id || ""}
-                              onChange={(e) =>
-                                handlePlayerChange(
-                                  playerSlot,
-                                  e.target.value || null
-                                )
-                              }
-                              className="player-dropdown"
-                            >
-                              <option value="">Select Player</option>
-                              {getAvailablePlayers(playerSlot).map(
-                                (availablePlayer) => (
-                                  <option
-                                    key={availablePlayer.id}
-                                    value={availablePlayer.id}
-                                  >
-                                    {availablePlayer.name}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                  
-                  <div className="team-points-display">
-                    <div className="points-value">
-                      {game.team1_player1_points + game.team1_player2_points}
-                    </div>
-                    <div className="points-label">Team Points</div>
-                  </div>
-                </div>
-
-                <div className="team-controls">
-                  <h4>Team Controls</h4>
-                  <div className="points-controls">
-                    <div className="points-row">
-                      <Button
-                        onClick={() => handleTeamPointsChange("team1", -1)}
-                        className="btn btn-sm btn-destructive"
-                        disabled={
-                          game?.team1_player1_points === 0
-                        }
-                      >
-                        -1
-                      </Button>
-                      <Button
-                        onClick={() => handleTeamPointsChange("team1", 1)}
-                        className="btn btn-sm btn-green"
-                      >
-                        +1
-                      </Button>
-                    </div>
-                    <div className="points-row">
-                      <Button
-                        onClick={() => handleSetTeamPoints("team1", 15)}
-                        className="btn btn-sm btn-green-dark"
-                      >
-                        Set to 15
-                      </Button>
-                      <Button
-                        onClick={() => handleSetTeamPoints("team1", 21)}
-                        className="btn btn-sm btn-green-dark"
-                      >
-                        Set to 21
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="vs-divider">VS</div>
-
-          <div className="team-section">
-            <Card className="team-card">
-              <CardHeader>
-                <CardTitle>Team 2</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="team-section-content">
-                  <div className="team-players-combined">
-                    {(["team2_player1", "team2_player2"] as const).map(
-                      (playerSlot, index) => {
-                        const player = game[playerSlot];
-
-                        return (
-                          <div key={playerSlot} className="player-selector-row">
-                            <label className="player-label">Player {index + 1}</label>
-                            <select
-                              value={player?.id || ""}
-                              onChange={(e) =>
-                                handlePlayerChange(
-                                  playerSlot,
-                                  e.target.value || null
-                                )
-                              }
-                              className="player-dropdown"
-                            >
-                              <option value="">Select Player</option>
-                              {getAvailablePlayers(playerSlot).map(
-                                (availablePlayer) => (
-                                  <option
-                                    key={availablePlayer.id}
-                                    value={availablePlayer.id}
-                                  >
-                                    {availablePlayer.name}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </div>
-                        );
-                      }
-                    )}
-                  </div>
-                  
-                  <div className="team-points-display">
-                    <div className="points-value">
-                      {game.team2_player1_points + game.team2_player2_points}
-                    </div>
-                    <div className="points-label">Team Points</div>
-                  </div>
-                </div>
-
-                <div className="team-controls">
-                  <h4>Team Controls</h4>
-                  <div className="points-controls">
-                    <div className="points-row">
-                      <Button
-                        onClick={() => handleTeamPointsChange("team2", -1)}
-                        className="btn btn-sm btn-destructive"
-                        disabled={
-                          game?.team2_player1_points === 0
-                        }
-                      >
-                        -1
-                      </Button>
-                      <Button
-                        onClick={() => handleTeamPointsChange("team2", 1)}
-                        className="btn btn-sm btn-green"
-                      >
-                        +1
-                      </Button>
-                    </div>
-                    <div className="points-row">
-                      <Button
-                        onClick={() => handleSetTeamPoints("team2", 15)}
-                        className="btn btn-sm btn-green-dark"
-                      >
-                        Set to 15
-                      </Button>
-                      <Button
-                        onClick={() => handleSetTeamPoints("team2", 21)}
-                        className="btn btn-sm btn-green-dark"
-                      >
-                        Set to 21
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Draggable Sections */}
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="game-sections">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="sections-container"
+              >
+                {sectionOrder.map((sectionId, index) => renderSection(sectionId, index))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
     </div>
   );
