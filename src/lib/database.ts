@@ -150,6 +150,7 @@ export async function getAllGamesWithPlayers(): Promise<GameWithPlayers[]> {
     timer_started_at: game.timer_started_at || null,
     timer_paused_at: game.timer_paused_at || null,
     timer_total_paused_time: game.timer_total_paused_time || 0,
+    switch_sides_interval: game.switch_sides_interval || null,
   }));
 }
 
@@ -190,6 +191,7 @@ export async function getGameWithPlayersById(id: string): Promise<GameWithPlayer
     timer_started_at: data.timer_started_at || null,
     timer_paused_at: data.timer_paused_at || null,
     timer_total_paused_time: data.timer_total_paused_time || 0,
+    switch_sides_interval: data.switch_sides_interval || null,
   };
 }
 

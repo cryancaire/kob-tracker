@@ -42,6 +42,7 @@ export interface Game {
   timer_started_at: string | null;
   timer_paused_at: string | null;
   timer_total_paused_time: number;
+  switch_sides_interval: number | null;
 }
 
 export interface NewGame {
@@ -70,6 +71,7 @@ export interface UpdateGame {
   timer_started_at?: string | null;
   timer_paused_at?: string | null;
   timer_total_paused_time?: number;
+  switch_sides_interval?: number | null;
 }
 
 export interface GameWithPlayers {
@@ -89,6 +91,7 @@ export interface GameWithPlayers {
   timer_started_at: string | null;
   timer_paused_at: string | null;
   timer_total_paused_time: number;
+  switch_sides_interval: number | null;
 }
 
 export type SectionId = 'actions' | 'players-leaderboard' | 'game-history';

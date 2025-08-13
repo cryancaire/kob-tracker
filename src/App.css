@@ -421,28 +421,56 @@
 
 /* Game View styles */
 .game-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Game Actions Card */
+.game-actions-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.game-actions-content {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Timer Card */
+.timer-card {
+  margin-bottom: 1.5rem;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.timer-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  padding: 1rem;
 }
 
-.game-title-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.timer-display {
+  flex: 1;
 }
 
-.game-timer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.main-timer {
+  font-size: 1.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--radius));
+  width: 100%;
+  text-align: center;
+  display: block;
 }
 
 .timer-controls {
   display: flex;
   gap: 0.5rem;
-  align-items: center;
+  flex-wrap: wrap;
 }
 
 .live-timer {
@@ -494,10 +522,55 @@
   50% { opacity: 0.7; }
 }
 
-.game-actions {
+/* Switch Sides Controls */
+.switch-sides-controls {
   display: flex;
+  align-items: center;
   gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: hsl(var(--muted));
+  border-radius: calc(var(--radius));
+  border: 1px solid hsl(var(--border));
 }
+
+.switch-sides-label {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+}
+
+.switch-sides-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Switch Sides Indicator */
+.switch-sides-indicator {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #fef3c7;
+  border: 2px solid #f59e0b;
+  color: #92400e;
+  border-radius: calc(var(--radius));
+  text-align: center;
+  animation: switchSidesPulse 1s ease-in-out infinite alternate;
+}
+
+.switch-sides-message {
+  font-size: 1.125rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+@keyframes switchSidesPulse {
+  0% { background-color: #fef3c7; border-color: #f59e0b; }
+  100% { background-color: #fed7aa; border-color: #ea580c; }
+}
+
 
 .btn-outline {
   background-color: transparent;
@@ -1388,20 +1461,41 @@
   }
   
   .game-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
+    margin-bottom: 1rem;
   }
   
   .game-header .app-title {
     font-size: 1.5rem;
-    text-align: center;
   }
   
-  .game-actions {
+  .game-actions-content {
     flex-direction: column;
-    width: 100%;
     gap: 0.75rem;
+  }
+
+  .timer-content {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .timer-display {
+    width: 100%;
+  }
+
+  .main-timer {
+    font-size: 1.25rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
+  .timer-controls {
+    justify-content: center;
+    gap: 0.5rem;
   }
   
   

@@ -259,6 +259,33 @@ export function GameView() {
     }
   };
 
+  const handleSwitchSidesInterval = async (interval: number | null) => {
+    if (!gameId || !game) return;
+    
+    try {
+      await updateGame(gameId, {
+        switch_sides_interval: interval,
+      });
+      
+      setGame(prev => prev ? {
+        ...prev,
+        switch_sides_interval: interval,
+      } : null);
+    } catch (err) {
+      setError("Failed to update switch sides interval");
+      console.error("Error updating switch sides interval:", err);
+    }
+  };
+
+  const shouldShowSwitchSides = () => {
+    if (!game || !game.switch_sides_interval) return false;
+    
+    const totalScore = game.team1_player1_points + game.team1_player2_points + 
+                      game.team2_player1_points + game.team2_player2_points;
+    
+    return totalScore > 0 && totalScore % game.switch_sides_interval === 0;
+  };
+
   const getAvailablePlayers = (currentPlayerSlot: string) => {
     const assignedPlayerIds = [
       game?.team1_player1?.id,
@@ -316,54 +343,14 @@ export function GameView() {
     <div className="app">
       <div className="app-container">
         <div className="game-header">
-          <div className="game-title-section">
-            <h1 className="app-title">
-              {game.status === "active" ? "Active Game" : "Edit Game"}
-            </h1>
-            <div className="game-timer">
-              <LiveTimer 
-                startTime={game.created_at} 
-                endTime={game.ended_at}
-                timerStartedAt={game.timer_started_at || null}
-                timerPausedAt={game.timer_paused_at || null}
-                timerTotalPausedTime={game.timer_total_paused_time || 0}
-                className="header-timer"
-              />
-              {game.status === "active" && (
-                <div className="timer-controls">
-                  {!(game.timer_started_at) ? (
-                    <Button 
-                      onClick={handleStartTimer}
-                      className="btn btn-sm btn-green"
-                    >
-                      Start Timer
-                    </Button>
-                  ) : (game.timer_paused_at) ? (
-                    <Button 
-                      onClick={handleResumeTimer}
-                      className="btn btn-sm btn-green"
-                    >
-                      Resume Timer
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={handlePauseTimer}
-                      className="btn btn-sm btn-destructive"
-                    >
-                      Pause Timer
-                    </Button>
-                  )}
-                  <Button 
-                    onClick={handleResetTimer}
-                    className="btn btn-sm btn-outline"
-                  >
-                    Reset Timer
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="game-actions">
+          <h1 className="app-title">
+            {game.status === "active" ? "Active Game" : "Edit Game"}
+          </h1>
+        </div>
+
+        {/* Game Actions Card */}
+        <Card className="game-actions-card">
+          <CardContent className="game-actions-content">
             <Button onClick={() => navigate("/")} className="btn btn-outline">
               Back to Home
             </Button>
@@ -376,8 +363,95 @@ export function GameView() {
                 Save Changes
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Timer Card */}
+        <Card className="timer-card">
+          <CardHeader>
+            <CardTitle>Game Timer</CardTitle>
+          </CardHeader>
+          <CardContent className="timer-content">
+            <div className="timer-display">
+              <LiveTimer 
+                startTime={game.created_at} 
+                endTime={game.ended_at}
+                timerStartedAt={game.timer_started_at || null}
+                timerPausedAt={game.timer_paused_at || null}
+                timerTotalPausedTime={game.timer_total_paused_time || 0}
+                className="main-timer"
+              />
+            </div>
+            {game.status === "active" && (
+              <div className="timer-controls">
+                {!(game.timer_started_at) ? (
+                  <Button 
+                    onClick={handleStartTimer}
+                    className="btn btn-green"
+                  >
+                    Start Timer
+                  </Button>
+                ) : (game.timer_paused_at) ? (
+                  <Button 
+                    onClick={handleResumeTimer}
+                    className="btn btn-green"
+                  >
+                    Resume Timer
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={handlePauseTimer}
+                    className="btn btn-destructive"
+                  >
+                    Pause Timer
+                  </Button>
+                )}
+                <Button 
+                  onClick={handleResetTimer}
+                  className="btn btn-outline"
+                >
+                  Reset Timer
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Switch Sides Controls */}
+        {game.status === "active" && (
+          <div className="switch-sides-controls">
+            <div className="switch-sides-label">Switch Sides Every:</div>
+            <div className="switch-sides-buttons">
+              <Button
+                onClick={() => handleSwitchSidesInterval(5)}
+                className={`btn btn-sm ${game.switch_sides_interval === 5 ? 'btn-green' : 'btn-outline'}`}
+              >
+                5 Points
+              </Button>
+              <Button
+                onClick={() => handleSwitchSidesInterval(7)}
+                className={`btn btn-sm ${game.switch_sides_interval === 7 ? 'btn-green' : 'btn-outline'}`}
+              >
+                7 Points
+              </Button>
+              <Button
+                onClick={() => handleSwitchSidesInterval(null)}
+                className={`btn btn-sm ${!game.switch_sides_interval ? 'btn-green' : 'btn-outline'}`}
+              >
+                Off
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Switch Sides Indicator */}
+        {shouldShowSwitchSides() && (
+          <div className="switch-sides-indicator">
+            <div className="switch-sides-message">
+              🔄 Switch Sides
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="error-banner">
