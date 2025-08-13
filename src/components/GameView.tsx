@@ -804,10 +804,10 @@ export function GameView() {
         </div>
 
         {/* Switch Sides Indicator */}
-        {shouldShowSwitchSides() && (
+        {shouldShowSwitchSides() && game?.status === 'active' && (
           <div className="switch-sides-indicator">
             <div className="switch-sides-message">
-              🔄 Switch Sides
+              🔄 Multiple of {game.switch_sides_interval} points reached - Switch Sides
             </div>
           </div>
         )}
