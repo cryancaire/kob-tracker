@@ -96,20 +96,11 @@ export function GameView() {
       const player1Slot = `${team}_player1` as
         | "team1_player1"
         | "team2_player1";
-      const player2Slot = `${team}_player2` as
-        | "team1_player2"
-        | "team2_player2";
 
       const currentPoints1 = game[`${player1Slot}_points`];
-      const currentPoints2 = game[`${player2Slot}_points`];
-
       const newPoints1 = Math.max(0, currentPoints1 + pointsToAdd);
-      const newPoints2 = Math.max(0, currentPoints2 + pointsToAdd);
 
-      await Promise.all([
-        updatePlayerPointsInGame(gameId, player1Slot, newPoints1),
-        updatePlayerPointsInGame(gameId, player2Slot, newPoints2),
-      ]);
+      await updatePlayerPointsInGame(gameId, player1Slot, newPoints1);
 
       // Update local state immediately for seamless experience
       setGame((prev) =>
@@ -117,7 +108,6 @@ export function GameView() {
           ? {
               ...prev,
               [`${player1Slot}_points`]: newPoints1,
-              [`${player2Slot}_points`]: newPoints2,
             }
           : null
       );
@@ -144,7 +134,7 @@ export function GameView() {
 
       await Promise.all([
         updatePlayerPointsInGame(gameId, player1Slot, points),
-        updatePlayerPointsInGame(gameId, player2Slot, points),
+        updatePlayerPointsInGame(gameId, player2Slot, 0),
       ]);
 
       // Update local state immediately for seamless experience
@@ -153,7 +143,7 @@ export function GameView() {
           ? {
               ...prev,
               [`${player1Slot}_points`]: points,
-              [`${player2Slot}_points`]: points,
+              [`${player2Slot}_points`]: 0,
             }
           : null
       );
@@ -328,8 +318,7 @@ export function GameView() {
                       onClick={() => handleTeamPointsChange("team1", -1)}
                       className="btn btn-sm btn-destructive"
                       disabled={
-                        game?.team1_player1_points === 0 &&
-                        game?.team1_player2_points === 0
+                        game?.team1_player1_points === 0
                       }
                     >
                       -1
@@ -362,8 +351,7 @@ export function GameView() {
                       onClick={() => handleTeamPointsChange("team2", -1)}
                       className="btn btn-sm btn-destructive"
                       disabled={
-                        game?.team2_player1_points === 0 &&
-                        game?.team2_player2_points === 0
+                        game?.team2_player1_points === 0
                       }
                     >
                       -1
@@ -453,8 +441,7 @@ export function GameView() {
                         onClick={() => handleTeamPointsChange("team1", -1)}
                         className="btn btn-sm btn-destructive"
                         disabled={
-                          game?.team1_player1_points === 0 &&
-                          game?.team1_player2_points === 0
+                          game?.team1_player1_points === 0
                         }
                       >
                         -1
@@ -547,8 +534,7 @@ export function GameView() {
                         onClick={() => handleTeamPointsChange("team2", -1)}
                         className="btn btn-sm btn-destructive"
                         disabled={
-                          game?.team2_player1_points === 0 &&
-                          game?.team2_player2_points === 0
+                          game?.team2_player1_points === 0
                         }
                       >
                         -1
