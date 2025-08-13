@@ -30,6 +30,7 @@ export function GameView() {
     'logistics',
     'teams'
   ]);
+  const [customSwitchSides, setCustomSwitchSides] = useState<string>('');
 
   const loadGameData = useCallback(async () => {
     if (!gameId) return;
@@ -105,11 +106,19 @@ export function GameView() {
       const player1Slot = `${team}_player1` as
         | "team1_player1"
         | "team2_player1";
+      const player2Slot = `${team}_player2` as
+        | "team1_player2"
+        | "team2_player2";
 
       const currentPoints1 = game[`${player1Slot}_points`];
+      const currentPoints2 = game[`${player2Slot}_points`];
       const newPoints1 = Math.max(0, currentPoints1 + pointsToAdd);
+      const newPoints2 = Math.max(0, currentPoints2 + pointsToAdd);
 
-      await updatePlayerPointsInGame(gameId, player1Slot, newPoints1);
+      await Promise.all([
+        updatePlayerPointsInGame(gameId, player1Slot, newPoints1),
+        updatePlayerPointsInGame(gameId, player2Slot, newPoints2),
+      ]);
 
       // Update local state immediately for seamless experience
       setGame((prev) =>
@@ -117,6 +126,7 @@ export function GameView() {
           ? {
               ...prev,
               [`${player1Slot}_points`]: newPoints1,
+              [`${player2Slot}_points`]: newPoints2,
             }
           : null
       );
@@ -143,7 +153,7 @@ export function GameView() {
 
       await Promise.all([
         updatePlayerPointsInGame(gameId, player1Slot, points),
-        updatePlayerPointsInGame(gameId, player2Slot, 0),
+        updatePlayerPointsInGame(gameId, player2Slot, points),
       ]);
 
       // Update local state immediately for seamless experience
@@ -152,7 +162,7 @@ export function GameView() {
           ? {
               ...prev,
               [`${player1Slot}_points`]: points,
-              [`${player2Slot}_points`]: 0,
+              [`${player2Slot}_points`]: points,
             }
           : null
       );
@@ -279,10 +289,25 @@ export function GameView() {
         ...prev,
         switch_sides_interval: interval,
       } : null);
+      
+      // Clear custom input when setting preset values
+      setCustomSwitchSides('');
     } catch (err) {
       setError("Failed to update switch sides interval");
       console.error("Error updating switch sides interval:", err);
     }
+  };
+
+  const handleCustomSwitchSides = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = parseInt(customSwitchSides);
+    
+    if (isNaN(value) || value <= 0) {
+      setError("Please enter a valid positive number");
+      return;
+    }
+    
+    await handleSwitchSidesInterval(value);
   };
 
   const shouldShowSwitchSides = () => {
@@ -431,25 +456,51 @@ export function GameView() {
                           <h4 className="logistics-section-title">Switch Sides</h4>
                           <div className="switch-sides-controls-content">
                             <div className="switch-sides-label">Switch Sides Every:</div>
-                            <div className="switch-sides-buttons">
-                              <Button
-                                onClick={() => handleSwitchSidesInterval(5)}
-                                className={`btn btn-sm ${game.switch_sides_interval === 5 ? 'btn-green' : 'btn-outline'}`}
-                              >
-                                5 Points
-                              </Button>
-                              <Button
-                                onClick={() => handleSwitchSidesInterval(7)}
-                                className={`btn btn-sm ${game.switch_sides_interval === 7 ? 'btn-green' : 'btn-outline'}`}
-                              >
-                                7 Points
-                              </Button>
-                              <Button
-                                onClick={() => handleSwitchSidesInterval(null)}
-                                className={`btn btn-sm ${!game.switch_sides_interval ? 'btn-green' : 'btn-outline'}`}
-                              >
-                                Off
-                              </Button>
+                            <div className="switch-sides-options">
+                              <div className="switch-sides-buttons">
+                                <Button
+                                  onClick={() => handleSwitchSidesInterval(5)}
+                                  className={`btn btn-sm ${game.switch_sides_interval === 5 ? 'btn-green' : 'btn-outline'}`}
+                                >
+                                  5 Points
+                                </Button>
+                                <Button
+                                  onClick={() => handleSwitchSidesInterval(7)}
+                                  className={`btn btn-sm ${game.switch_sides_interval === 7 ? 'btn-green' : 'btn-outline'}`}
+                                >
+                                  7 Points
+                                </Button>
+                                <Button
+                                  onClick={() => handleSwitchSidesInterval(null)}
+                                  className={`btn btn-sm ${!game.switch_sides_interval ? 'btn-green' : 'btn-outline'}`}
+                                >
+                                  Off
+                                </Button>
+                                {game.switch_sides_interval && game.switch_sides_interval !== 5 && game.switch_sides_interval !== 7 && (
+                                  <div className="custom-switch-sides-display">
+                                    <span className="custom-value-indicator">
+                                      Custom: {game.switch_sides_interval} Points
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              <form onSubmit={handleCustomSwitchSides} className="switch-sides-custom">
+                                <input
+                                  type="number"
+                                  value={customSwitchSides}
+                                  onChange={(e) => setCustomSwitchSides(e.target.value)}
+                                  placeholder="Custom points"
+                                  className="switch-sides-input"
+                                  min="1"
+                                />
+                                <Button
+                                  type="submit"
+                                  className="btn btn-sm btn-blue"
+                                  disabled={!customSwitchSides}
+                                >
+                                  Set
+                                </Button>
+                              </form>
                             </div>
                           </div>
                         </div>
@@ -538,7 +589,7 @@ export function GameView() {
                                 
                                 <div className="team-points-display">
                                   <div className="points-value">
-                                    {game.team1_player1_points + game.team1_player2_points}
+                                    {game.team1_player1_points}
                                   </div>
                                   <div className="points-label">Team Points</div>
                                 </div>
@@ -631,7 +682,7 @@ export function GameView() {
                                 
                                 <div className="team-points-display">
                                   <div className="points-value">
-                                    {game.team2_player1_points + game.team2_player2_points}
+                                    {game.team2_player1_points}
                                   </div>
                                   <div className="points-label">Team Points</div>
                                 </div>
@@ -795,7 +846,7 @@ export function GameView() {
                     </div>
                   </div>
                   <div className="mobile-score-value">
-                    {game.team1_player1_points + game.team1_player2_points}
+                    {game.team1_player1_points}
                   </div>
                 </div>
                 <div className="mobile-score-divider">VS</div>
@@ -810,7 +861,7 @@ export function GameView() {
                     </div>
                   </div>
                   <div className="mobile-score-value">
-                    {game.team2_player1_points + game.team2_player2_points}
+                    {game.team2_player1_points}
                   </div>
                 </div>
               </div>

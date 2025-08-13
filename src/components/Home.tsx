@@ -199,6 +199,11 @@ export function Home() {
           ? { ...game, status: 'ended' as const, ended_at: new Date().toISOString() }
           : game
       ));
+      
+      // Refresh player scores to reflect the newly ended game
+      const updatedPlayers = await getAllPlayersWithGamePoints();
+      setPlayers(updatedPlayers);
+      
       setError(null);
     } catch (err) {
       setError("Failed to end game");
