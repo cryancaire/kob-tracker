@@ -15,6 +15,8 @@ import {
   getUserPreferences,
   updateSectionOrder,
   updateCollapsedSections,
+  generateRoundRobinGames,
+  getAllPlayers,
 } from "../lib/database";
 import { useAuth } from "../contexts/AuthContext";
 import type { PlayerWithGamePoints, GameWithPlayers, SectionId } from "../types/database";
@@ -32,6 +34,7 @@ export function Home() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionId, boolean>>({} as Record<SectionId, boolean>);
   const [sectionOrder, setSectionOrder] = useState<SectionId[]>([
     'actions',
@@ -137,6 +140,22 @@ export function Home() {
     }
   };
 
+  const handleGenerateRoundRobin = async () => {
+    try {
+      const allPlayers = await getAllPlayers();
+      const createdGames = await generateRoundRobinGames(allPlayers);
+      
+      // Update the games list with the new games
+      await loadData(); // Reload all data to get the updated games
+      
+      setSuccess(`Successfully created ${createdGames.length} games! Each player will play with different teammates.`);
+      setError(null);
+    } catch (err) {
+      setError("Failed to generate round robin games");
+      console.error("Error generating round robin games:", err);
+    }
+  };
+
   const handleDeleteGame = async (gameId: string) => {
     try {
       await deleteGame(gameId);
@@ -209,7 +228,7 @@ export function Home() {
     }
   };
 
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = async (result: { destination?: { index: number } | null; source: { index: number } }) => {
     const { destination, source } = result;
 
     // If dropped outside the list, do nothing
@@ -310,6 +329,13 @@ export function Home() {
                               Start New Game
                             </Button>
                             <Button
+                              onClick={handleGenerateRoundRobin}
+                              className="btn btn-blue btn-large"
+                              disabled={players.length < 4}
+                            >
+                              Auto-Generate All Games
+                            </Button>
+                            <Button
                               onClick={handleDeleteAllGames}
                               variant="destructive"
                               className="btn btn-destructive btn-large"
@@ -317,6 +343,9 @@ export function Home() {
                             >
                               Delete All Games
                             </Button>
+                          </div>
+                          <div className="disclaimer">
+                            <small>Auto-Generate is experimental and may not work correctly depending on the number of players</small>
                           </div>
                         </div>
                         
@@ -617,6 +646,15 @@ export function Home() {
         <div className="error-banner">
           {error}
           <button onClick={() => setError(null)} className="error-close">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {success && (
+        <div className="success-banner">
+          {success}
+          <button onClick={() => setSuccess(null)} className="success-close">
             ✕
           </button>
         </div>

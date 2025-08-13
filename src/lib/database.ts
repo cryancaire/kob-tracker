@@ -465,7 +465,7 @@ export async function createOrUpdateUserPreferences(preferences: NewUserPreferen
     throw new Error('User must be authenticated');
   }
 
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     user_id: user.id,
   };
   
@@ -499,4 +499,100 @@ export async function updateSectionOrder(sectionOrder: SectionId[]): Promise<Use
 
 export async function updateCollapsedSections(collapsedSections: Record<SectionId, boolean>): Promise<UserPreferences> {
   return createOrUpdateUserPreferences({ collapsed_sections: collapsedSections });
+}
+
+export async function generateRoundRobinGames(selectedPlayers: Player[]): Promise<Game[]> {
+  if (selectedPlayers.length < 4) {
+    throw new Error('Need at least 4 players to generate games');
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error('User must be authenticated');
+  }
+
+  // Generate all unique teammate pairs
+  const teammatePairs = generateAllTeammatePairs(selectedPlayers);
+  const games = createGamesFromTeammatePairs(teammatePairs, selectedPlayers);
+  
+  const gamePromises: Promise<Game>[] = [];
+  
+  for (const game of games) {
+    const gameData: NewGame = {
+      team1_player1_id: game.team1[0].id,
+      team1_player2_id: game.team1[1].id,
+      team2_player1_id: game.team2[0].id,
+      team2_player2_id: game.team2[1].id,
+      status: 'active'
+    };
+    
+    gamePromises.push(createGame(gameData));
+  }
+
+  const results = await Promise.all(gamePromises);
+  return results;
+}
+
+function generateAllTeammatePairs(players: Player[]): Array<[Player, Player]> {
+  const pairs: Array<[Player, Player]> = [];
+  
+  // Generate all possible pairs of players as teammates
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      pairs.push([players[i], players[j]]);
+    }
+  }
+  
+  return pairs;
+}
+
+function createGamesFromTeammatePairs(teammatePairs: Array<[Player, Player]>, allPlayers: Player[]): Array<{ team1: [Player, Player], team2: [Player, Player] }> {
+  const games: Array<{ team1: [Player, Player], team2: [Player, Player] }> = [];
+  const usedPairs = new Set<string>();
+  
+  // For each possible teammate pair, try to create a game without repeating any pair
+  for (const team1 of teammatePairs) {
+    const [player1, player2] = team1;
+    const team1Key = [player1.id, player2.id].sort().join('-');
+    
+    // Skip if this pair has already been used in any capacity
+    if (usedPairs.has(team1Key)) continue;
+    
+    const remainingPlayers = allPlayers.filter(p => p.id !== player1.id && p.id !== player2.id);
+    
+    if (remainingPlayers.length >= 2) {
+      // Find an opposing pair that hasn't been used in any game yet
+      let team2: [Player, Player] | null = null;
+      
+      for (let i = 0; i < remainingPlayers.length; i++) {
+        for (let j = i + 1; j < remainingPlayers.length; j++) {
+          const potentialTeam2: [Player, Player] = [remainingPlayers[i], remainingPlayers[j]];
+          const potentialTeam2Key = [potentialTeam2[0].id, potentialTeam2[1].id].sort().join('-');
+          
+          // Only use this pair if it hasn't been used in any previous game
+          if (!usedPairs.has(potentialTeam2Key)) {
+            team2 = potentialTeam2;
+            break;
+          }
+        }
+        if (team2) break;
+      }
+      
+      // Only create the game if we found a valid opposing team
+      if (team2) {
+        const team2Key = [team2[0].id, team2[1].id].sort().join('-');
+        
+        games.push({
+          team1: team1,
+          team2: team2
+        });
+        
+        // Mark both pairs as used (they can never appear together again)
+        usedPairs.add(team1Key);
+        usedPairs.add(team2Key);
+      }
+    }
+  }
+  
+  return games;
 }

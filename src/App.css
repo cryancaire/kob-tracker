@@ -50,6 +50,42 @@
   color: #dc2626;
 }
 
+.success-banner {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #16a34a;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.success-close {
+  margin-left: 0.5rem;
+  color: #22c55e;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1rem;
+}
+
+.success-close:hover {
+  color: #16a34a;
+}
+
+.disclaimer {
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.disclaimer small {
+  color: #6b7280;
+  font-style: italic;
+  line-height: 1.4;
+}
+
 .info-banner {
   margin-bottom: 1.5rem;
   padding: 1rem;
