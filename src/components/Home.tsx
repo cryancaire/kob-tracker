@@ -21,6 +21,7 @@ import type { PlayerWithGamePoints, GameWithPlayers, SectionId } from "../types/
 import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { LiveTimer } from "./ui/live-timer";
 
 
 export function Home() {
@@ -477,8 +478,15 @@ export function Home() {
                                       game.ended_at || game.created_at
                                     ).toLocaleDateString()}
                                   </div>
-                                  <div className={`game-status ${game.status}`}>
-                                    {game.status === "active" ? "Active" : "Ended"}
+                                  <div className="game-timer-info">
+                                    <div className={`game-status ${game.status}`}>
+                                      {game.status === "active" ? "Active" : "Ended"}
+                                    </div>
+                                    <LiveTimer 
+                                      startTime={game.created_at} 
+                                      endTime={game.ended_at}
+                                      className="history-timer"
+                                    />
                                   </div>
                                 </div>
                                 <div className="game-players">

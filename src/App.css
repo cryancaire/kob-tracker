@@ -427,6 +427,55 @@
   margin-bottom: 2rem;
 }
 
+.game-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.game-timer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-timer {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  padding: 0.375rem 0.75rem;
+  border-radius: calc(var(--radius));
+  font-size: 0.875rem;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.live-timer.active {
+  background-color: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+  animation: pulse 2s infinite;
+}
+
+.live-timer.ended {
+  background-color: #f3f4f6;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.header-timer {
+  font-size: 1rem;
+}
+
+.history-timer {
+  font-size: 0.75rem;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .game-actions {
   display: flex;
   gap: 1rem;
@@ -557,6 +606,60 @@
   width: 100%;
 }
 
+.team-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.team-players-combined {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius));
+  background-color: hsl(var(--muted));
+}
+
+.player-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.player-label {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  min-width: 80px;
+  font-size: 0.875rem;
+}
+
+.team-points-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  background-color: hsl(var(--muted));
+  border-radius: calc(var(--radius));
+  border: 2px solid hsl(var(--border));
+}
+
+.team-points-display .points-value {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.team-points-display .points-label {
+  font-size: 1rem;
+  color: hsl(var(--muted-foreground));
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
 .team-player {
   padding: 1rem;
   border: 1px solid hsl(var(--border));
@@ -617,6 +720,12 @@
   background-color: #f3f4f6;
   color: #374151;
   border: 1px solid #d1d5db;
+}
+
+.game-timer-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .team-label {
@@ -1042,6 +1151,119 @@
 .sign-out-btn {
   font-size: 0.8125rem;
   padding: 0.375rem 0.75rem;
+}
+
+/* Mobile Scoreboard - only visible on mobile */
+.mobile-scoreboard {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-scoreboard {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+
+  .mobile-scoreboard-card {
+    border: 2px solid hsl(var(--ring));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-scoreboard-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .mobile-scores {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+  }
+
+  .mobile-team-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .mobile-team-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mobile-player-names {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .mobile-player-name {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .mobile-score-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2563eb;
+    line-height: 1;
+  }
+
+  .mobile-score-divider {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: hsl(var(--muted-foreground));
+    padding: 0 1rem;
+  }
+
+  .mobile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    border-top: 1px solid hsl(var(--border));
+    padding-top: 1rem;
+  }
+
+  .mobile-team-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mobile-team-label {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: center;
+  }
+
+  .mobile-control-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .mobile-control-buttons .btn {
+    flex: 1;
+    min-width: 50px;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.25rem;
+  }
 }
 
 /* Mobile Responsive */
