@@ -485,6 +485,9 @@ export function Home() {
                                     <LiveTimer 
                                       startTime={game.created_at} 
                                       endTime={game.ended_at}
+                                      timerStartedAt={game.timer_started_at || null}
+                                      timerPausedAt={game.timer_paused_at || null}
+                                      timerTotalPausedTime={game.timer_total_paused_time || 0}
                                       className="history-timer"
                                     />
                                   </div>

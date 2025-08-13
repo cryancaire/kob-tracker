@@ -6,6 +6,7 @@ import {
   updatePlayerInGame,
   updatePlayerPointsInGame,
   endGame,
+  updateGame,
 } from "../lib/database";
 import { useAuth } from "../contexts/AuthContext";
 import type { GameWithPlayers, Player } from "../types/database";
@@ -171,6 +172,93 @@ export function GameView() {
     navigate("/");
   };
 
+  const handleStartTimer = async () => {
+    if (!gameId || !game) return;
+    
+    try {
+      const now = new Date().toISOString();
+      await updateGame(gameId, {
+        timer_started_at: now,
+        timer_paused_at: null,
+      });
+      
+      setGame(prev => prev ? {
+        ...prev,
+        timer_started_at: now,
+        timer_paused_at: null,
+      } : null);
+    } catch (err) {
+      setError("Failed to start timer");
+      console.error("Error starting timer:", err);
+    }
+  };
+
+  const handlePauseTimer = async () => {
+    if (!gameId || !game) return;
+    
+    try {
+      const now = new Date().toISOString();
+      await updateGame(gameId, {
+        timer_paused_at: now,
+      });
+      
+      setGame(prev => prev ? {
+        ...prev,
+        timer_paused_at: now,
+      } : null);
+    } catch (err) {
+      setError("Failed to pause timer");
+      console.error("Error pausing timer:", err);
+    }
+  };
+
+  const handleResumeTimer = async () => {
+    if (!gameId || !game || !game.timer_paused_at) return;
+    
+    try {
+      const now = new Date();
+      const pausedAt = new Date(game.timer_paused_at);
+      const additionalPausedTime = now.getTime() - pausedAt.getTime();
+      const newTotalPausedTime = game.timer_total_paused_time + additionalPausedTime;
+      
+      await updateGame(gameId, {
+        timer_paused_at: null,
+        timer_total_paused_time: newTotalPausedTime,
+      });
+      
+      setGame(prev => prev ? {
+        ...prev,
+        timer_paused_at: null,
+        timer_total_paused_time: newTotalPausedTime,
+      } : null);
+    } catch (err) {
+      setError("Failed to resume timer");
+      console.error("Error resuming timer:", err);
+    }
+  };
+
+  const handleResetTimer = async () => {
+    if (!gameId || !game) return;
+    
+    try {
+      await updateGame(gameId, {
+        timer_started_at: null,
+        timer_paused_at: null,
+        timer_total_paused_time: 0,
+      });
+      
+      setGame(prev => prev ? {
+        ...prev,
+        timer_started_at: null,
+        timer_paused_at: null,
+        timer_total_paused_time: 0,
+      } : null);
+    } catch (err) {
+      setError("Failed to reset timer");
+      console.error("Error resetting timer:", err);
+    }
+  };
+
   const getAvailablePlayers = (currentPlayerSlot: string) => {
     const assignedPlayerIds = [
       game?.team1_player1?.id,
@@ -236,8 +324,43 @@ export function GameView() {
               <LiveTimer 
                 startTime={game.created_at} 
                 endTime={game.ended_at}
+                timerStartedAt={game.timer_started_at || null}
+                timerPausedAt={game.timer_paused_at || null}
+                timerTotalPausedTime={game.timer_total_paused_time || 0}
                 className="header-timer"
               />
+              {game.status === "active" && (
+                <div className="timer-controls">
+                  {!(game.timer_started_at) ? (
+                    <Button 
+                      onClick={handleStartTimer}
+                      className="btn btn-sm btn-green"
+                    >
+                      Start Timer
+                    </Button>
+                  ) : (game.timer_paused_at) ? (
+                    <Button 
+                      onClick={handleResumeTimer}
+                      className="btn btn-sm btn-green"
+                    >
+                      Resume Timer
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handlePauseTimer}
+                      className="btn btn-sm btn-destructive"
+                    >
+                      Pause Timer
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={handleResetTimer}
+                    className="btn btn-sm btn-outline"
+                  >
+                    Reset Timer
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
           <div className="game-actions">

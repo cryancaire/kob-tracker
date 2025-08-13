@@ -39,6 +39,9 @@ export interface Game {
   created_at: string;
   updated_at: string;
   ended_at: string | null;
+  timer_started_at: string | null;
+  timer_paused_at: string | null;
+  timer_total_paused_time: number;
 }
 
 export interface NewGame {
@@ -64,6 +67,9 @@ export interface UpdateGame {
   team2_player2_points?: number;
   status?: GameStatus;
   ended_at?: string | null;
+  timer_started_at?: string | null;
+  timer_paused_at?: string | null;
+  timer_total_paused_time?: number;
 }
 
 export interface GameWithPlayers {
@@ -80,6 +86,9 @@ export interface GameWithPlayers {
   created_at: string;
   updated_at: string;
   ended_at: string | null;
+  timer_started_at: string | null;
+  timer_paused_at: string | null;
+  timer_total_paused_time: number;
 }
 
 export type SectionId = 'actions' | 'players-leaderboard' | 'game-history';
